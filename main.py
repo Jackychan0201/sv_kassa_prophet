@@ -25,14 +25,14 @@ def forecast(req: TimeSeriesRequest):
     m = Prophet()
     m.fit(df)
 
-    # Create future 7 days
-    future = m.make_future_dataframe(periods=7, freq="D")
+    # Create future 31 days
+    future = m.make_future_dataframe(periods=31, freq="D")
     fcst = m.predict(future)
 
-    # Return only the next 7 days (exclude training days)
-    # If last training ds is X, we want rows where ds > X and only next 7 rows
+    # Return only the next 31 days (exclude training days)
+    # If last training ds is X, we want rows where ds > X and only next 31 rows
     last_train = df["ds"].max()
-    next7 = fcst[fcst["ds"] > last_train].head(7)
-    out = next7[["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
+    next31 = fcst[fcst["ds"] > last_train].head(31)
+    out = next31[["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
     out["ds"] = out["ds"].dt.strftime("%Y-%m-%d")
     return {"forecast": out.to_dict(orient="records")}
