@@ -10,6 +10,7 @@ app = FastAPI(title="Prophet Forecast Microservice", version="1.0")
 class TimeSeriesRequest(BaseModel):
     dates: List[str]   # ISO date strings
     values: List[float]
+    periods: int
 
 @app.post("/forecast")
 def forecast(req: TimeSeriesRequest):
@@ -25,14 +26,14 @@ def forecast(req: TimeSeriesRequest):
     m = Prophet()
     m.fit(df)
 
-    # Create future 31 days
-    future = m.make_future_dataframe(periods=31, freq="D")
+    # Create future days
+    future = m.make_future_dataframe(periods=req.periods, freq="D")
     fcst = m.predict(future)
 
-    # Return only the next 31 days (exclude training days)
-    # If last training ds is X, we want rows where ds > X and only next 31 rows
+    # Return only the next req.periods days (exclude training days)
+    # If last training ds is X, we want rows where ds > X and only next req.periods rows
     last_train = df["ds"].max()
-    next31 = fcst[fcst["ds"] > last_train].head(31)
-    out = next31[["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
+    next_fcst = fcst[fcst["ds"] > last_train].head(req.periods)
+    out = next_fcst[["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
     out["ds"] = out["ds"].dt.strftime("%Y-%m-%d")
     return {"forecast": out.to_dict(orient="records")}
